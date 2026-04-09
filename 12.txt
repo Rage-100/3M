@@ -1,0 +1,40 @@
+#include<pic18fregs.h> 
+#include<delay.h> 
+#pragma config XINST=OFF 
+#pragma config FOSC = INTOSCIO_EC 
+ 
+#pragma config WDT = OFF 
+#pragma config LVP = OFF 
+#define VREF 5 
+#define LED_TRIS_Output TRISDbits 
+#define LED_LAT_Output LATDbits 
+void ADC_init(void); 
+int ADC_read(int channel); 
+void ADC_Init() 
+{ 
+   ADCON0=00000100;     //A/D Module is OFF and Channel 1 is selected 
+  TRISA = 0xFF; /* Set as input port */ 
+  ADCON1 = 0x0E; /* Ref vtg is VDD and Configure pin as analog pin */ 
+  ADCON2 = 0x92; /* Right Justified, 4Tad and Fosc/32. */ 
+  ADRESH=0; /* Flush ADC output Register */ 
+  ADRESL=0; 
+} 
+int ADC_Read(int channel) 
+{ 
+  int digital; 
+  ADCON0 = (ADCON0 & 0b11000011) | ( (channel << 2) & 0b00111100 ); 
+  ADCON0 |= ((1 << ADCON0bits.ADON) | (1 << ADCON0bits.GO)); 
+  while(ADCON0bits.GO_NOT_DONE==1); 
+  digital = (ADRESH*256) | (ADRESL); 
+  return(digital); 
+} 
+void main(void) 
+{ 
+float voltage; 
+  OSCCON=0x72; /* set internal clock to 8MHz */ 
+  ADC_Init(); 
+  TRISD = 0; 
+  while(1) 
+  { 
+  LATD= ADC_Read(0)*((float)VREF/(float)1023); 
+  } } 
